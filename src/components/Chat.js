@@ -1,4 +1,3 @@
-// src/components/Chat.js
 import React, { useEffect, useRef, useState } from 'react';
 import { db } from '../firebaseConfig';
 import { addDoc, collection, orderBy, query, onSnapshot } from 'firebase/firestore';
@@ -24,7 +23,7 @@ const Chat = ({ user, recipientId }) => {
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
           const messagesList = [];
           querySnapshot.forEach((doc) => {
-            messagesList.push(doc.data());
+            messagesList.push({ id: doc.id, ...doc.data() });
           });
           setMessages(messagesList);
           scrollToBottom();
@@ -53,6 +52,7 @@ const Chat = ({ user, recipientId }) => {
       createdAt: new Date(),
       userId: user.uid,
       userName: user.email,
+      translatedText: '', // This will be updated by the Firebase Function
     };
 
     await addDoc(collection(db, 'chatRooms', chatRoomId, 'messages'), message);
@@ -71,7 +71,7 @@ const Chat = ({ user, recipientId }) => {
       <List>
         {messages.map((msg, index) => (
           <ListItem key={index}>
-            <ListItemText primary={msg.text} secondary={msg.userName} />
+            <ListItemText primary={msg.text} secondary={msg.translatedText || 'Translating...'} />
           </ListItem>
         ))}
         <div ref={messagesEndRef} />
