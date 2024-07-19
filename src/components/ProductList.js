@@ -1,17 +1,22 @@
-// src/components/ProductList.js
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebaseConfig';
 import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { List, ListItem, ListItemText, ListItemAvatar, Avatar, IconButton, Box, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Button, Grid } from '@mui/material';
+import { List, Avatar, IconButton, Box, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Button, Grid, MenuItem, Select, FormControl, InputLabel, Card, CardContent, CardActions } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { parseFormattedText } from '../helpers';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [editProduct, setEditProduct] = useState(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const [editPrice, setEditPrice] = useState(''); // New state for price
+  const [editPrice, setEditPrice] = useState('');
+  const [editMaterialType, setEditMaterialType] = useState('');
+  const [editProductionMethod, setEditProductionMethod] = useState('');
+  const [editTransportationMethod, setEditTransportationMethod] = useState('');
+  const [editProductWeight, setEditProductWeight] = useState('');
+  const [editLocalOrImported, setEditLocalOrImported] = useState('');
   const [deleteProduct, setDeleteProduct] = useState(null);
 
   useEffect(() => {
@@ -30,7 +35,12 @@ const ProductList = () => {
     setEditProduct(product);
     setEditName(product.name);
     setEditDescription(product.description);
-    setEditPrice(product.price); // Set price for editing
+    setEditPrice(product.price);
+    setEditMaterialType(product.materialType);
+    setEditProductionMethod(product.productionMethod);
+    setEditTransportationMethod(product.transportationMethod);
+    setEditProductWeight(product.productWeight);
+    setEditLocalOrImported(product.localOrImported);
   };
 
   const handleSave = async () => {
@@ -38,7 +48,12 @@ const ProductList = () => {
     await updateDoc(productRef, {
       name: editName,
       description: editDescription,
-      price: editPrice, // Update price
+      price: editPrice,
+      materialType: editMaterialType,
+      productionMethod: editProductionMethod,
+      transportationMethod: editTransportationMethod,
+      productWeight: editProductWeight,
+      localOrImported: editLocalOrImported,
     });
     setEditProduct(null);
   };
@@ -55,35 +70,50 @@ const ProductList = () => {
   };
 
   return (
-    <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: '8px', mt: 2 }}>
-      <Typography variant="h6" gutterBottom>Your Products</Typography>
+    <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: '8px', mt: 2, backgroundColor: '#f9f9f9' }}>
+      <Typography variant="h4" gutterBottom color="primary">Your Products</Typography>
       <List>
         {products.map((product) => (
-          <ListItem key={product.id}>
-            <Grid container alignItems="center" spacing={1}>
-              {product.imageUrl && (
+          <Card key={product.id} sx={{ mb: 2, borderRadius: '16px', boxShadow: 3 }}>
+            <CardContent>
+              <Grid container spacing={2}>
                 <Grid item>
-                  <ListItemAvatar>
-                    <Avatar src={product.imageUrl} alt={product.name} />
-                  </ListItemAvatar>
+                  {product.imageUrl && (
+                    <Box sx={{ width: 200, height: 200 }}>
+                      <Avatar 
+                        src={product.imageUrl} 
+                        alt={product.name} 
+                        sx={{ width: '100%', height: '100%'}} 
+                      />
+                    </Box>
+                  )}
                 </Grid>
-              )}
-              <Grid item xs>
-                <ListItemText
-                  primary={product.name}
-                  secondary={`${product.description} - $${product.price}`} // Display price
-                />
+                <Grid item xs>
+                  <Typography variant="h5">{product.name}</Typography>
+                  <Typography variant="body1" color="textSecondary">{product.description} - ${product.price}</Typography>
+                  {product.carbonFootprint && (
+                    <Typography variant="body2" color="textSecondary"><strong>Carbon Footprint:</strong> {product.carbonFootprint}</Typography>
+                  )}
+                  {product.reductionAdvice && (
+                    <div>
+                      <Typography variant="body2" color="textSecondary"><strong>Reduction Advice:</strong></Typography>
+                      {parseFormattedText(product.reductionAdvice)}
+                    </div>
+                  )}
+                </Grid>
+                <Grid item>
+                  <CardActions>
+                    <IconButton aria-label="edit" onClick={() => handleEdit(product)} color="primary">
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton aria-label="delete" onClick={() => setDeleteProduct(product)} color="secondary">
+                      <DeleteIcon />
+                    </IconButton>
+                  </CardActions>
+                </Grid>
               </Grid>
-              <Grid item>
-                <IconButton aria-label="edit" onClick={() => handleEdit(product)}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton aria-label="delete" onClick={() => setDeleteProduct(product)}>
-                  <DeleteIcon />
-                </IconButton>
-              </Grid>
-            </Grid>
-          </ListItem>
+            </CardContent>
+          </Card>
         ))}
       </List>
 
@@ -118,6 +148,62 @@ const ProductList = () => {
             value={editPrice}
             onChange={(e) => setEditPrice(e.target.value)}
           />
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Material Type</InputLabel>
+            <Select
+              value={editMaterialType}
+              onChange={(e) => setEditMaterialType(e.target.value)}
+              label="Material Type"
+            >
+              <MenuItem value="Plastic">Plastic</MenuItem>
+              <MenuItem value="Metal">Metal</MenuItem>
+              <MenuItem value="Wood">Wood</MenuItem>
+              <MenuItem value="Fabric">Fabric</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Production Method</InputLabel>
+            <Select
+              value={editProductionMethod}
+              onChange={(e) => setEditProductionMethod(e.target.value)}
+              label="Production Method"
+            >
+              <MenuItem value="Handmade">Handmade</MenuItem>
+              <MenuItem value="Machine-made">Machine-made</MenuItem>
+              <MenuItem value="Recycled Materials">Recycled Materials</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Transportation Method</InputLabel>
+            <Select
+              value={editTransportationMethod}
+              onChange={(e) => setEditTransportationMethod(e.target.value)}
+              label="Transportation Method"
+            >
+              <MenuItem value="Air">Air</MenuItem>
+              <MenuItem value="Sea">Sea</MenuItem>
+              <MenuItem value="Land">Land</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            margin="dense"
+            label="Product Weight (kg)"
+            type="text"
+            fullWidth
+            value={editProductWeight}
+            onChange={(e) => setEditProductWeight(e.target.value)}
+          />
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Local or Imported</InputLabel>
+            <Select
+              value={editLocalOrImported}
+              onChange={(e) => setEditLocalOrImported(e.target.value)}
+              label="Local or Imported"
+            >
+              <MenuItem value="Local">Local</MenuItem>
+              <MenuItem value="Imported">Imported</MenuItem>
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} color="primary">

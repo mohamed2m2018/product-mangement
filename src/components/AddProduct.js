@@ -1,19 +1,21 @@
-// src/components/AddProduct.js
 import React, { useState, useEffect } from 'react';
 import { db, storage, auth } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { TextField, Button, Box, Typography, CircularProgress } from '@mui/material';
+import { TextField, Button, Box, Typography, CircularProgress, MenuItem, Select, InputLabel, FormControl, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { useForm, Controller } from 'react-hook-form';
 
 const AddProduct = ({ productId }) => {
-  const [user] = useAuthState(auth); // Hook to get the current authenticated user
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState(''); // New state for price
-  const [image, setImage] = useState(null);
+  const [user] = useAuthState(auth); 
   const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [carbonFootprint, setCarbonFootprint] = useState('');
+  const [reductionAdvice, setReductionAdvice] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const { handleSubmit, control, setValue, reset } = useForm();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -21,16 +23,25 @@ const AddProduct = ({ productId }) => {
         const productDoc = await getDoc(doc(db, 'products', productId));
         if (productDoc.exists()) {
           const productData = productDoc.data();
-          setName(productData.name);
-          setDescription(productData.description);
-          setPrice(productData.price);
+          reset({
+            name: productData.name,
+            description: productData.description,
+            price: productData.price,
+            materialType: productData.materialType,
+            productionMethod: productData.productionMethod,
+            transportationMethod: productData.transportationMethod,
+            productWeight: productData.productWeight,
+            localOrImported: productData.localOrImported,
+          });
           setImagePreview(productData.imageUrl);
+          setCarbonFootprint(productData.carbonFootprint);
+          setReductionAdvice(productData.reductionAdvice);
         }
       }
     };
 
     fetchProduct();
-  }, [productId]);
+  }, [productId, reset]);
 
   const handleImageUpload = async (file) => {
     try {
@@ -44,8 +55,8 @@ const AddProduct = ({ productId }) => {
     }
   };
 
-  const saveProduct = async () => {
-    if (!name || !description || !price || (!image && !imagePreview)) {
+  const onSubmit = async (data) => {
+    if (!data.name || !data.description || !data.price || (!image && !imagePreview)) {
       alert('Please fill all fields and select an image');
       return;
     }
@@ -59,33 +70,33 @@ const AddProduct = ({ productId }) => {
     try {
       const imageUrl = image ? await handleImageUpload(image) : imagePreview;
 
+      const productData = {
+        ...data,
+        imageUrl,
+        updatedAt: serverTimestamp(),
+        carbonFootprint,
+        reductionAdvice,
+      };
+
       if (productId) {
         // Update existing product
-        await updateDoc(doc(db, 'products', productId), {
-          name,
-          description,
-          price,
-          imageUrl,
-          updatedAt: serverTimestamp(),
-        });
+        await updateDoc(doc(db, 'products', productId), productData);
       } else {
         // Add new product
         await addDoc(collection(db, 'products'), {
-          name,
-          description,
-          price,
+          ...productData,
           createdAt: serverTimestamp(),
-          imageUrl,
-          ownerId: user.uid, // Adding the ownerId
-          ownerEmail: user.email, // Adding the ownerEmail
+          ownerId: user.uid, 
+          ownerEmail: user.email,
         });
       }
 
-      setName('');
-      setDescription('');
-      setPrice('');
+      reset();
       setImage(null);
       setImagePreview(null);
+      setCarbonFootprint('');
+      setReductionAdvice('');
+      setModalOpen(false); // Close the modal after successful submission
     } catch (error) {
       console.error('Error saving product:', error);
       alert('Error saving product');
@@ -99,63 +110,198 @@ const AddProduct = ({ productId }) => {
     if (file) {
       setImage(file);
       setImagePreview(URL.createObjectURL(file));
+      setModalOpen(true); // Open the modal when an image is selected
     }
+  };
+
+  const handleCancel = () => {
+    setModalOpen(false);
+    setImage(null);
+    setImagePreview(null);
   };
 
   return (
     <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: '8px', mt: 2 }}>
       <Typography variant="h6" gutterBottom>{productId ? 'Edit Product' : 'Add Product'}</Typography>
-      <TextField
-        fullWidth
-        label="Product Name"
-        variant="outlined"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        sx={{ mb: 2 }}
-      />
-      <TextField
-        fullWidth
-        label="Product Description"
-        variant="outlined"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        sx={{ mb: 2 }}
-      />
-      <TextField
-        fullWidth
-        label="Product Price"
-        variant="outlined"
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-        sx={{ mb: 2 }}
-      />
-      <Button
-        variant="contained"
-        component="label"
-        fullWidth
-        sx={{ mb: 2 }}
-      >
-        Upload Image
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Controller
+          name="name"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <TextField
+              {...field}
+              fullWidth
+              label="Product Name"
+              variant="outlined"
+              sx={{ mb: 2 }}
+              disabled={loading}
+            />
+          )}
+        />
+        <Controller
+          name="description"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <TextField
+              {...field}
+              fullWidth
+              label="Product Description"
+              variant="outlined"
+              sx={{ mb: 2 }}
+              disabled={loading}
+            />
+          )}
+        />
+        <Controller
+          name="price"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <TextField
+              {...field}
+              fullWidth
+              label="Product Price"
+              variant="outlined"
+              sx={{ mb: 2 }}
+              disabled={loading}
+            />
+          )}
+        />
+        <Controller
+          name="materialType"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <FormControl fullWidth sx={{ mb: 2 }} disabled={loading}>
+              <InputLabel>Material Type</InputLabel>
+              <Select {...field} label="Material Type">
+                <MenuItem value="Plastic">Plastic</MenuItem>
+                <MenuItem value="Metal">Metal</MenuItem>
+                <MenuItem value="Wood">Wood</MenuItem>
+                <MenuItem value="Fabric">Fabric</MenuItem>
+              </Select>
+            </FormControl>
+          )}
+        />
+        <Controller
+          name="productionMethod"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <FormControl fullWidth sx={{ mb: 2 }} disabled={loading}>
+              <InputLabel>Production Method</InputLabel>
+              <Select {...field} label="Production Method">
+                <MenuItem value="Handmade">Handmade</MenuItem>
+                <MenuItem value="Machine-made">Machine-made</MenuItem>
+                <MenuItem value="Recycled Materials">Recycled Materials</MenuItem>
+              </Select>
+            </FormControl>
+          )}
+        />
+        <Controller
+          name="transportationMethod"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <FormControl fullWidth sx={{ mb: 2 }} disabled={loading}>
+              <InputLabel>Transportation Method</InputLabel>
+              <Select {...field} label="Transportation Method">
+                <MenuItem value="Air">Air</MenuItem>
+                <MenuItem value="Sea">Sea</MenuItem>
+                <MenuItem value="Land">Land</MenuItem>
+              </Select>
+            </FormControl>
+          )}
+        />
+        <Controller
+          name="productWeight"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <TextField
+              {...field}
+              fullWidth
+              label="Product Weight (kg)"
+              variant="outlined"
+              sx={{ mb: 2 }}
+              disabled={loading}
+            />
+          )}
+        />
+        <Controller
+          name="localOrImported"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <FormControl fullWidth sx={{ mb: 2 }} disabled={loading}>
+              <InputLabel>Local or Imported</InputLabel>
+              <Select {...field} label="Local or Imported">
+                <MenuItem value="Local">Local</MenuItem>
+                <MenuItem value="Imported">Imported</MenuItem>
+              </Select>
+            </FormControl>
+          )}
+        />
         <input
           type="file"
           hidden
+          id="upload-image"
           onChange={handleImageChange}
+          disabled={loading}
         />
-      </Button>
-      {imagePreview && (
-        <Box sx={{ mb: 2 }}>
-          <img src={imagePreview} alt="Selected" style={{ maxWidth: '100%' }} />
-        </Box>
-      )}
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={saveProduct}
-        fullWidth
-        disabled={loading}
+        {imagePreview && (
+          <Box sx={{ mb: 2 }}>
+            <img src={imagePreview} alt="Selected" style={{ maxWidth: '100%' }} />
+          </Box>
+        )}
+        {carbonFootprint && (
+          <Typography variant="body1" gutterBottom>
+            Carbon Footprint: {carbonFootprint}
+          </Typography>
+        )}
+        {reductionAdvice && (
+          <Typography variant="body1" gutterBottom>
+            Reduction Advice: {reductionAdvice}
+          </Typography>
+        )}
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth
+          component="label"
+          disabled={loading}
+        >
+          {loading ? <CircularProgress size={24} /> : (productId ? 'Update Product' : 'Add Product')}
+          <input
+            type="file"
+            hidden
+            onChange={handleImageChange}
+            disabled={loading}
+          />
+        </Button>
+      </form>
+
+      <Dialog
+        open={modalOpen}
+        onClose={handleCancel}
       >
-        {loading ? <CircularProgress size={24} /> : (productId ? 'Update Product' : 'Add Product')}
-      </Button>
+        <DialogTitle>Are you sure you want to submit the form?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Please confirm that you want to submit the form with the selected image and data.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancel} color="primary" disabled={loading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit(onSubmit)} color="primary" autoFocus disabled={loading}>
+            {loading ? <CircularProgress size={24} /> : 'Submit'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
