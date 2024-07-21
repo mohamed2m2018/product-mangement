@@ -1,7 +1,8 @@
-// src/components/Auth.js
 import React, { useState, useEffect } from 'react';
-import { auth } from '../firebaseConfig';
+import { auth, db } from '../firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import axios from 'axios';
 import { TextField, Button, Box, Typography, Alert } from '@mui/material';
 
 const Auth = ({ setUser }) => {
@@ -22,7 +23,22 @@ const Auth = ({ setUser }) => {
     setError('');
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      setUser(userCredential.user);
+      const user = userCredential.user;
+
+      // Fetch user's country based on IP address
+      const response = await axios.get('https://ipinfo.io?token=7b812b488cc942');
+      const country = response.data.country;
+
+      // Fetch the full country name
+      const countryNameResponse = await axios.get(`https://restcountries.com/v3.1/alpha/${country}`);
+      const fullCountryName = countryNameResponse.data[0].name.common;
+
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email,
+        baseCountry: fullCountryName,
+      });
+
+      setUser(user);
     } catch (error) {
       setError(error.message);
     }
