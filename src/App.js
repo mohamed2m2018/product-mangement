@@ -121,6 +121,13 @@ const App = () => {
     setSnackbarOpen(false);
   };
 
+  const handleProductAdded = () => {
+    setTabIndex(1); // Switch to the Product List tab (index 1)
+    setSnackbarMessage('Product added successfully');
+    setSnackbarSeverity('success');
+    setSnackbarOpen(true);
+  };
+
   if (loading) {
     return (
       <Container>
@@ -169,7 +176,7 @@ const App = () => {
                 </Tabs>
               </Box>
               <TabPanel value={tabIndex} index={0}>
-                <AddProduct />
+                <AddProduct onProductAdded={handleProductAdded} />
               </TabPanel>
               <TabPanel value={tabIndex} index={1}>
                 <ProductList />

@@ -71,7 +71,7 @@ const ProductList = () => {
 
   return (
     <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: '8px', mt: 2, backgroundColor: '#f9f9f9' }}>
-      <Typography variant="h4" gutterBottom color="primary">Your Products</Typography>
+      <Typography variant="h4" gutterBottom color="primary">All Products</Typography>
       <List>
         {products.map((product) => (
           <Card key={product.id} sx={{ mb: 2, borderRadius: '16px', boxShadow: 3 }}>
@@ -90,7 +90,7 @@ const ProductList = () => {
                 </Grid>
                 <Grid item xs>
                   <Typography variant="h5">{product.name}</Typography>
-                  <Typography variant="body1" color="textSecondary">{product.description} - ${product.price}</Typography>
+                  <Typography variant="body1" color="textSecondary">{product.description} -  {product.currency} {product.price}</Typography>
                   {product.carbonFootprint && (
                     <Typography variant="body2" color="textSecondary"><strong>Carbon Footprint:</strong> {product.carbonFootprint}</Typography>
                   )}

@@ -1,8 +1,7 @@
-// src/components/ChatList.js
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebaseConfig';
 import { collectionGroup, getDocs } from 'firebase/firestore';
-import { List, ListItem, ListItemText, Typography, Box, CircularProgress } from '@mui/material';
+import { List, ListItem, ListItemText, Typography, Box, CircularProgress, Avatar } from '@mui/material';
 
 const ChatList = ({ user, setSelectedRecipient }) => {
   const [chatRooms, setChatRooms] = useState([]);
@@ -27,8 +26,13 @@ const ChatList = ({ user, setSelectedRecipient }) => {
           return acc;
         }, {});
 
-        const chatRoomsArray = Object.values(rooms);
-        console.log("Fetched chat rooms:", chatRoomsArray);
+        const chatRoomsArray = Object.values(rooms).map(room => {
+          const otherUserMessage = room.messages.find(msg => msg.userId !== user.uid);
+          const otherUserName = otherUserMessage ? otherUserMessage.userName : 'Unknown User';
+          return { ...room, otherUserName };
+        });
+
+        console.log("Processed chat rooms:", chatRoomsArray);
         setChatRooms(chatRoomsArray);
         setLoading(false);
       } catch (err) {
@@ -55,10 +59,15 @@ const ChatList = ({ user, setSelectedRecipient }) => {
       <List>
         {chatRooms.map((room) => {
           const recipientId = room.participants.find(id => id !== user.uid);
-          console.log('Recipient ID:', recipientId);
+          const avatarLetter = room.otherUserName ? room.otherUserName[0].toUpperCase() : '?';
+          const lastMessage = room.messages[room.messages.length - 1];
           return (
             <ListItem button key={room.id} onClick={() => setSelectedRecipient(recipientId)}>
-              <ListItemText primary={`Chat with ${recipientId}`} />
+              <Avatar sx={{ mr: 2 }}>{avatarLetter}</Avatar>
+              <ListItemText 
+                primary={room.otherUserName} 
+                secondary={`Last message: ${lastMessage?.text || 'No messages yet'}`} 
+              />
             </ListItem>
           );
         })}

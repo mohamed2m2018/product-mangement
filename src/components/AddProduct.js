@@ -2,20 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { db, storage, auth } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { TextField, Button, Box, Typography, CircularProgress, MenuItem, Select, InputLabel, FormControl, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { TextField, Button, MenuItem, Box, Typography, CircularProgress, InputLabel, FormControl, Dialog, DialogTitle, DialogContent, DialogActions, Select } from '@mui/material';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useForm, Controller } from 'react-hook-form';
+import Autocomplete from '@mui/lab/Autocomplete';
 
-const AddProduct = ({ productId }) => {
-  const [user] = useAuthState(auth); 
+const AddProduct = ({ productId, onProductAdded }) => {
+  const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(false);
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [carbonFootprint, setCarbonFootprint] = useState('');
   const [reductionAdvice, setReductionAdvice] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [baseCountry, setBaseCountry] = useState('');
 
-  const { handleSubmit, control, setValue, reset } = useForm();
+  const { handleSubmit, control, reset } = useForm();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -27,11 +29,12 @@ const AddProduct = ({ productId }) => {
             name: productData.name,
             description: productData.description,
             price: productData.price,
-            materialType: productData.materialType,
+            materialType: productData.materialType || [],
             productionMethod: productData.productionMethod,
             transportationMethod: productData.transportationMethod,
             productWeight: productData.productWeight,
             localOrImported: productData.localOrImported,
+            country: productData.country || baseCountry,
           });
           setImagePreview(productData.imageUrl);
           setCarbonFootprint(productData.carbonFootprint);
@@ -40,8 +43,19 @@ const AddProduct = ({ productId }) => {
       }
     };
 
+    const fetchUserBaseCountry = async () => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setBaseCountry(userData.baseCountry || '');
+        }
+      }
+    };
+
     fetchProduct();
-  }, [productId, reset]);
+    fetchUserBaseCountry();
+  }, [productId, reset, user]);
 
   const handleImageUpload = async (file) => {
     try {
@@ -86,7 +100,7 @@ const AddProduct = ({ productId }) => {
         await addDoc(collection(db, 'products'), {
           ...productData,
           createdAt: serverTimestamp(),
-          ownerId: user.uid, 
+          ownerId: user.uid,
           ownerEmail: user.email,
         });
       }
@@ -96,7 +110,12 @@ const AddProduct = ({ productId }) => {
       setImagePreview(null);
       setCarbonFootprint('');
       setReductionAdvice('');
-      setModalOpen(false); // Close the modal after successful submission
+      setModalOpen(false);
+      
+      // Call the onProductAdded callback
+      if (onProductAdded) {
+        onProductAdded();
+      }
     } catch (error) {
       console.error('Error saving product:', error);
       alert('Error saving product');
@@ -110,7 +129,7 @@ const AddProduct = ({ productId }) => {
     if (file) {
       setImage(file);
       setImagePreview(URL.createObjectURL(file));
-      setModalOpen(true); // Open the modal when an image is selected
+      setModalOpen(true);
     }
   };
 
@@ -172,17 +191,25 @@ const AddProduct = ({ productId }) => {
         <Controller
           name="materialType"
           control={control}
-          defaultValue=""
+          defaultValue={[]}
           render={({ field }) => (
-            <FormControl fullWidth sx={{ mb: 2 }} disabled={loading}>
-              <InputLabel>Material Type</InputLabel>
-              <Select {...field} label="Material Type">
-                <MenuItem value="Plastic">Plastic</MenuItem>
-                <MenuItem value="Metal">Metal</MenuItem>
-                <MenuItem value="Wood">Wood</MenuItem>
-                <MenuItem value="Fabric">Fabric</MenuItem>
-              </Select>
-            </FormControl>
+            <Autocomplete
+              {...field}
+              multiple
+              options={['Plastic', 'Metal', 'Wood', 'Fabric', 'Glass', 'Leather', 'Ceramic', 'Paper', 'Cotton', 'Wool', 'Silk', 'Synthetic', 'Natural Oils', 'Synthetic Aromatics']}
+              getOptionLabel={(option) => option}
+              filterSelectedOptions
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Material Type"
+                  variant="outlined"
+                  sx={{ mb: 2 }}
+                  disabled={loading}
+                />
+              )}
+              onChange={(_, data) => field.onChange(data)}
+            />
           )}
         />
         <Controller
@@ -242,6 +269,21 @@ const AddProduct = ({ productId }) => {
                 <MenuItem value="Imported">Imported</MenuItem>
               </Select>
             </FormControl>
+          )}
+        />
+        <Controller
+          name="country"
+          control={control}
+          defaultValue={baseCountry}
+          render={({ field }) => (
+            <TextField
+              {...field}
+              fullWidth
+              label="Country"
+              variant="outlined"
+              sx={{ mb: 2 }}
+              disabled={loading}
+            />
           )}
         />
         <input
