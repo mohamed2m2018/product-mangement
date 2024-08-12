@@ -18,7 +18,7 @@ import {
   Avatar,
 } from '@mui/material';
 
-const Chat = ({ user, recipientId }) => {
+const Chat = ({ user, recipientId, productId }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [chatRoomId, setChatRoomId] = useState(null);
@@ -29,18 +29,24 @@ const Chat = ({ user, recipientId }) => {
   useEffect(() => {
     const fetchChatRoomMessages = async () => {
       try {
-        const roomId = [user.uid, recipientId].sort().join('_');
+        if (!recipientId || !productId) return; // Early return if IDs are not set
+
+        console.log('Fetching chat room messages...', recipientId, productId);
+
+        // Create chat room ID by combining user IDs and product ID
+        const roomId = [user.uid, recipientId, productId].sort().join('_');
         setChatRoomId(roomId);
+
         const q = query(
           collection(db, 'chatRooms', roomId, 'messages'),
-          orderBy('createdAt'),
+          orderBy('createdAt', 'asc'),
         );
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
-          const messagesList = [];
-          querySnapshot.forEach((doc) => {
-            messagesList.push({ id: doc.id, ...doc.data() });
-          });
+          const messagesList = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
           setMessages(messagesList);
 
           // Set recipient name from the first message that's not from the current user
@@ -49,6 +55,8 @@ const Chat = ({ user, recipientId }) => {
           );
           if (recipientMessage) {
             setRecipientName(recipientMessage.userName);
+          } else {
+            setRecipientName("Unknown User");
           }
 
           scrollToBottom();
@@ -60,10 +68,8 @@ const Chat = ({ user, recipientId }) => {
       }
     };
 
-    if (recipientId) {
-      fetchChatRoomMessages();
-    }
-  }, [user.uid, recipientId]);
+    fetchChatRoomMessages();
+  }, [user.uid, recipientId, productId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,7 +94,7 @@ const Chat = ({ user, recipientId }) => {
   useEffect(() => {
     inputRef.current?.focus();
     scrollToBottom();
-  }, [recipientId]);
+  }, [messages]);
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

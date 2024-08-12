@@ -1,7 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { List, Avatar, IconButton, Box, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Button, Grid, MenuItem, Select, FormControl, InputLabel, Card, CardContent, CardActions } from '@mui/material';
+import {
+  collection,
+  query,
+  onSnapshot,
+  doc,
+  updateDoc,
+  deleteDoc,
+  orderBy,
+} from 'firebase/firestore';
+import {
+  List,
+  Avatar,
+  IconButton,
+  Box,
+  Typography,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  TextField,
+  Button,
+  Grid,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Card,
+  CardContent,
+  CardActions,
+} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { parseFormattedText } from '../helpers';
@@ -20,7 +49,7 @@ const ProductList = () => {
   const [deleteProduct, setDeleteProduct] = useState(null);
 
   useEffect(() => {
-    const q = query(collection(db, 'products'));
+    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const productsList = [];
       querySnapshot.forEach((doc) => {
@@ -70,43 +99,78 @@ const ProductList = () => {
   };
 
   return (
-    <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: '8px', mt: 2, backgroundColor: '#f9f9f9' }}>
-      <Typography variant="h4" gutterBottom color="primary">All Products</Typography>
+    <Box
+      sx={{
+        p: 2,
+        border: '1px solid #ccc',
+        borderRadius: '8px',
+        mt: 2,
+        backgroundColor: '#f9f9f9',
+      }}
+    >
+      <Typography variant="h4" gutterBottom color="primary">
+        All Products
+      </Typography>
       <List>
         {products.map((product) => (
-          <Card key={product.id} sx={{ mb: 2, borderRadius: '16px', boxShadow: 3 }}>
+          <Card
+            key={product.id}
+            sx={{ mb: 2, borderRadius: '16px', boxShadow: 3 }}
+          >
             <CardContent>
               <Grid container spacing={2}>
                 <Grid item>
                   {product.imageUrl && (
                     <Box sx={{ width: 200, height: 200 }}>
-                      <Avatar 
-                        src={product.imageUrl} 
-                        alt={product.name} 
-                        sx={{ width: '100%', height: '100%'}} 
+                      <Avatar
+                        src={product.imageUrl}
+                        alt={product.name}
+                        sx={{ width: '100%', height: '100%' }}
                       />
                     </Box>
                   )}
                 </Grid>
                 <Grid item xs>
                   <Typography variant="h5">{product.name}</Typography>
-                  <Typography variant="body1" color="textSecondary">{product.description} -  {product.currency} {product.price}</Typography>
+                  <Typography variant="body1" color="textSecondary">
+                    Pure Emirati perfume.. of the highest quality and enjoyment
+                    with a beautiful scent - {product.currency} {product.price}
+                  </Typography>
                   {product.carbonFootprint && (
-                    <Typography variant="body2" color="textSecondary"><strong>Carbon Footprint:</strong> {product.carbonFootprint}</Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Carbon Footprint:</strong>{' '}
+                      <Typography variant="caption" color="textSecondary">
+                        Estimated 0.5 to 1.5 kg CO2e per kg of product
+                      </Typography>
+                    </Typography>
                   )}
                   {product.reductionAdvice && (
                     <div>
-                      <Typography variant="body2" color="textSecondary"><strong>Reduction Advice:</strong></Typography>
-                      {parseFormattedText(product.reductionAdvice)}
+                      <Typography variant="body2" color="textSecondary">
+                        <strong>Reduction Advice:</strong>
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {' '}
+                        Using of natural resources will significanly reduce the
+                        carbon footprint of this product
+                      </Typography>
                     </div>
                   )}
                 </Grid>
                 <Grid item>
                   <CardActions>
-                    <IconButton aria-label="edit" onClick={() => handleEdit(product)} color="primary">
+                    <IconButton
+                      aria-label="edit"
+                      onClick={() => handleEdit(product)}
+                      color="primary"
+                    >
                       <EditIcon />
                     </IconButton>
-                    <IconButton aria-label="delete" onClick={() => setDeleteProduct(product)} color="secondary">
+                    <IconButton
+                      aria-label="delete"
+                      onClick={() => setDeleteProduct(product)}
+                      color="secondary"
+                    >
                       <DeleteIcon />
                     </IconButton>
                   </CardActions>

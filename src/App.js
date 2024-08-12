@@ -5,7 +5,20 @@ import AddProduct from './components/AddProduct';
 import ProductList from './components/ProductList';
 import Chat from './components/Chat';
 import ChatList from './components/ChatList';
-import { Container, Box, Typography, CircularProgress, Button, Tabs, Tab, Grid, AppBar, Toolbar, Snackbar, Alert } from '@mui/material';
+import {
+  Container,
+  Box,
+  Typography,
+  CircularProgress,
+  Button,
+  Tabs,
+  Tab,
+  Grid,
+  AppBar,
+  Toolbar,
+  Snackbar,
+  Alert,
+} from '@mui/material';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import AddBoxIcon from '@mui/icons-material/AddBox';
@@ -28,11 +41,7 @@ function TabPanel(props) {
       transition={{ duration: 0.5 }}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </motion.div>
   );
 }
@@ -87,6 +96,7 @@ const theme = createTheme({
 const App = () => {
   const [user, setUser] = useState(null);
   const [selectedRecipient, setSelectedRecipient] = useState(null);
+  const [selectedproductId, selectedProductId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tabIndex, setTabIndex] = useState(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -131,7 +141,14 @@ const App = () => {
   if (loading) {
     return (
       <Container>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}
+        >
           <CircularProgress />
         </Box>
       </Container>
@@ -147,7 +164,11 @@ const App = () => {
               Inseparable App
             </Typography>
             {user && (
-              <Button color="secondary" variant="contained" onClick={handleLogout}>
+              <Button
+                color="secondary"
+                variant="contained"
+                onClick={handleLogout}
+              >
                 Logout
               </Button>
             )}
@@ -158,7 +179,14 @@ const App = () => {
             <Auth setUser={setUser} />
           ) : (
             <>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 3,
+                }}
+              >
                 <Typography variant="h6">Welcome, {user.email}</Typography>
               </Box>
               <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -170,8 +198,16 @@ const App = () => {
                   indicatorColor="primary"
                   centered
                 >
-                  <Tab icon={<AddBoxIcon />} label="Add Product" {...a11yProps(0)} />
-                  <Tab icon={<ListAltIcon />} label="Product List" {...a11yProps(1)} />
+                  <Tab
+                    icon={<AddBoxIcon />}
+                    label="Add Product"
+                    {...a11yProps(0)}
+                  />
+                  <Tab
+                    icon={<ListAltIcon />}
+                    label="Product List"
+                    {...a11yProps(1)}
+                  />
                   <Tab icon={<ChatIcon />} label="Chat" {...a11yProps(2)} />
                 </Tabs>
               </Box>
@@ -183,16 +219,36 @@ const App = () => {
               </TabPanel>
               <TabPanel value={tabIndex} index={2}>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={4} sx={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
-                    <ChatList user={user} setSelectedRecipient={setSelectedRecipient} />
+                  <Grid
+                    item
+                    xs={12}
+                    md={4}
+                    sx={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
+                  >
+                    <ChatList
+                      user={user}
+                      setSelectedRecipient={setSelectedRecipient}
+                      setSelectedProductId={selectedProductId}
+                    />
                   </Grid>
-                  <Grid item xs={12} md={8} sx={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+                  <Grid
+                    item
+                    xs={12}
+                    md={8}
+                    sx={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
+                  >
                     {selectedRecipient ? (
                       <Box>
-                        <Chat user={user} recipientId={selectedRecipient} />
+                        <Chat
+                          user={user}
+                          recipientId={selectedRecipient}
+                          productId={selectedproductId}
+                        />
                       </Box>
                     ) : (
-                      <Typography variant="h6" sx={{ mt: 2 }}>Select a recipient to start chatting</Typography>
+                      <Typography variant="h6" sx={{ mt: 2 }}>
+                        Select a recipient to start chatting
+                      </Typography>
                     )}
                   </Grid>
                 </Grid>
@@ -205,7 +261,11 @@ const App = () => {
           autoHideDuration={6000}
           onClose={handleSnackbarClose}
         >
-          <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          <Alert
+            onClose={handleSnackbarClose}
+            severity={snackbarSeverity}
+            sx={{ width: '100%' }}
+          >
             {snackbarMessage}
           </Alert>
         </Snackbar>
